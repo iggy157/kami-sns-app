@@ -9,15 +9,22 @@ import { Crown, MessageCircle, Users, Sparkles, ArrowRight } from "lucide-react"
 import Link from "next/link"
 
 export default function HomePage() {
-  const { user, isTokenValid } = useAuthStore()
+  const { user, isTokenValid, isHydrated } = useAuthStore()
   const router = useRouter()
 
   useEffect(() => {
+    // Wait for Zustand hydration before checking auth
+    if (!isHydrated) {
+      console.log("Waiting for store hydration...")
+      return
+    }
+
     // If user is already logged in, redirect to dashboard
     if (user && isTokenValid()) {
+      console.log("User already authenticated, redirecting to dashboard")
       router.push("/dashboard")
     }
-  }, [user, isTokenValid, router])
+  }, [user, isTokenValid, router, isHydrated])
 
   const features = [
     {

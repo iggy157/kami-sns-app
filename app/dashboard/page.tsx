@@ -30,7 +30,7 @@ interface RecentMessage {
 }
 
 export default function DashboardPage() {
-  const { user, token, isTokenValid } = useAuthStore()
+  const { user, token, isTokenValid, verifyToken, setUser, setToken, isHydrated } = useAuthStore()
   const router = useRouter()
   const [gods, setGods] = useState<God[]>([])
   const [recentMessages, setRecentMessages] = useState<RecentMessage[]>([])
@@ -40,21 +40,72 @@ export default function DashboardPage() {
     totalMessages: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
-    // Check authentication
-    if (!user || !token || !isTokenValid()) {
-      console.log("No user or invalid token, redirecting to login")
-      router.push("/login")
+    // Wait for Zustand hydration before checking auth
+    if (!isHydrated) {
+      console.log("Waiting for store hydration...")
       return
     }
 
-    console.log("User authenticated, loading dashboard for:", user.username)
-    fetchDashboardData()
-  }, [user, token, router, isTokenValid])
+    // Prevent multiple authentication checks
+    if (authChecked) {
+      console.log("Authentication already verified, skipping check")
+      return
+    }
+
+    const checkAuth = async () => {
+      console.log("Checking authentication state:", { 
+        hasUser: !!user, 
+        hasToken: !!token, 
+        isTokenValid: isTokenValid(),
+        isHydrated,
+        authChecked
+      })
+
+      // If no user or token, redirect to login
+      if (!user || !token) {
+        console.log("No user or token found, redirecting to login")
+        router.push("/login")
+        return
+      }
+
+      // If we have user and token, verify token validity
+      if (isTokenValid()) {
+        try {
+          console.log("Verifying token...")
+          const isValid = await verifyToken()
+          if (isValid) {
+            console.log("Token verification successful")
+            setAuthChecked(true)
+            fetchDashboardData()
+          } else {
+            console.log("Token verification failed, redirecting to login")
+            router.push("/login")
+          }
+        } catch (error) {
+          console.error("Token verification error:", error)
+          router.push("/login")
+        }
+      } else {
+        console.log("Token is invalid, redirecting to login")
+        router.push("/login")
+      }
+    }
+
+    checkAuth()
+  }, [user, token, router, isTokenValid, isHydrated, authChecked])
 
   const fetchDashboardData = async () => {
+    // Only fetch if we haven't loaded data yet
+    if (gods.length > 0 || recentMessages.length > 0) {
+      console.log("Data already loaded, skipping fetch")
+      return
+    }
+
     try {
+      console.log("Fetching dashboard data...")
       setLoading(true)
 
       // Fetch user's gods
@@ -92,7 +143,19 @@ export default function DashboardPage() {
     })
   }, [gods, recentMessages])
 
-  if (!user) return null
+  // Show loading while checking authentication
+  if (!authChecked || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <p className="text-xl text-purple-800">認証を確認中...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
