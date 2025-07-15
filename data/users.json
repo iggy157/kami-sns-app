@@ -14,7 +14,16 @@
     "email": "test2@gmail.com",
     "isAdmin": false,
     "isSuperAdmin": false,
-    "saisenBalance": 1000,
+    "saisenBalance": 0,
     "createdAt": "2025-07-15T05:59:58.552Z"
+  },
+  {
+    "id": "5",
+    "username": "test3",
+    "email": "test3@gmail.com",
+    "isAdmin": false,
+    "isSuperAdmin": false,
+    "saisenBalance": 0,
+    "createdAt": "2025-07-15T06:43:14.641Z"
   }
 ]

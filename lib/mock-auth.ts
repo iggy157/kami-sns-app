@@ -54,6 +54,8 @@ const dataDir = path.join(process.cwd(), 'data')
 const usersFilePath = path.join(dataDir, 'users.json')
 const passwordsFilePath = path.join(dataDir, 'passwords.json')
 const tokensFilePath = path.join(dataDir, 'tokens.json')
+const godsFilePath = path.join(dataDir, 'gods.json')
+const messagesFilePath = path.join(dataDir, 'messages.json')
 
 // Ensure data directory exists
 const ensureDataDir = async () => {
@@ -216,23 +218,36 @@ const setActiveTokens = async (tokens: Record<string, string>): Promise<void> =>
   }
 }
 
-// Helper functions for localStorage (client-side only)
-const getStoredGods = (): any[] => {
-  if (typeof window === "undefined") return []
-  try {
-    const stored = localStorage.getItem(GODS_STORAGE_KEY)
-    return stored ? JSON.parse(stored) : []
-  } catch {
-    return []
+// Helper functions for gods storage (both client and server)
+const getStoredGods = async (): Promise<any[]> => {
+  if (typeof window === "undefined") {
+    // Server-side: read from file
+    const fileData = await readServerFile(godsFilePath)
+    return fileData || []
+  } else {
+    // Client-side: read from localStorage
+    try {
+      const stored = localStorage.getItem(GODS_STORAGE_KEY)
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
   }
 }
 
-const setStoredGods = (gods: any[]) => {
-  if (typeof window === "undefined") return
-  try {
-    localStorage.setItem(GODS_STORAGE_KEY, JSON.stringify(gods))
-  } catch (error) {
-    console.error("Failed to store gods:", error)
+const setStoredGods = async (gods: any[]) => {
+  if (typeof window === "undefined") {
+    // Server-side: write to file
+    await writeServerFile(godsFilePath, gods)
+  } else {
+    // Client-side: write to localStorage and also to server
+    try {
+      localStorage.setItem(GODS_STORAGE_KEY, JSON.stringify(gods))
+      // Also sync to server
+      await writeServerFile(godsFilePath, gods)
+    } catch (error) {
+      console.error("Failed to store gods:", error)
+    }
   }
 }
 
@@ -420,23 +435,23 @@ export const mockCreateGod = async (godData: any): Promise<string> => {
     powerLevel: 1,
   }
 
-  // Store in localStorage
-  const existingGods = getStoredGods()
+  // Store in localStorage and file system
+  const existingGods = await getStoredGods()
   existingGods.push(god)
-  setStoredGods(existingGods)
+  await setStoredGods(existingGods)
 
   console.log("God created:", { godId, totalGods: existingGods.length })
   return godId
 }
 
 export const mockGetGodById = async (godId: string): Promise<any | null> => {
-  const gods = getStoredGods()
+  const gods = await getStoredGods()
   const god = gods.find((g) => g.id === godId)
   return god || null
 }
 
 export const mockGetUserGods = async (userId: string): Promise<any[]> => {
-  const gods = getStoredGods()
+  const gods = await getStoredGods()
   return gods.filter((g) => g.creatorId === userId)
 }
 
@@ -479,6 +494,6 @@ export const mockGetCommunityMessages = async (godId: string): Promise<any[]> =>
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 }
 
-export const getAllMockGods = (): any[] => {
-  return getStoredGods()
+export const getAllMockGods = async (): Promise<any[]> => {
+  return await getStoredGods()
 }

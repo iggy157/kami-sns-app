@@ -203,6 +203,76 @@ export default function CreateGodPage() {
     }))
   }
 
+  const handleSubmit = async () => {
+    if (!user || !token || !isTokenValid()) {
+      toast({
+        title: "認証エラー",
+        description: "再ログインしてください",
+        variant: "destructive",
+      })
+      router.push("/login")
+      return
+    }
+
+    if (user.saisenBalance < 500) {
+      toast({
+        title: "賽銭不足",
+        description: "神様作成には500賽銭が必要です",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      console.log("Creating god with data:", formData)
+
+      const godCreationData = {
+        ...formData,
+        description: `${formData.deity}として活動する神様`,
+      }
+
+      console.log("Sending god creation request...")
+      const response = await apiClient.post("/api/gods/create", godCreationData)
+
+      console.log("God creation response:", response)
+
+      // Clear draft after successful creation
+      clearDraft()
+
+      toast({
+        title: "神様作成完了！",
+        description: `${formData.name}が誕生しました！ダッシュボードで確認できます。`,
+      })
+
+      // Redirect to dashboard or god detail
+      router.push("/dashboard")
+
+    } catch (error: any) {
+      console.error("Failed to create god:", error)
+      
+      let errorMessage = "神様の作成に失敗しました"
+      
+      if (error.message) {
+        errorMessage = error.message
+      } else if (error.error) {
+        errorMessage = error.error
+      }
+
+      setError(errorMessage)
+      
+      toast({
+        title: "作成失敗",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const isStepValid = (step: number) => {
     switch (step) {
       case 0:
@@ -226,77 +296,14 @@ export default function CreateGodPage() {
   }
 
   const nextStep = () => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep(activeStep + 1)
+    if (isStepValid(activeStep) && activeStep < steps.length - 1) {
+      setActiveStep((prev) => prev + 1)
     }
   }
 
   const prevStep = () => {
     if (activeStep > 0) {
-      setActiveStep(activeStep - 1)
-    }
-  }
-
-  const handleSubmit = async () => {
-    setIsLoading(true)
-    setError("")
-
-    try {
-      if (!isStepValid(activeStep)) {
-        throw new Error("すべての必須項目を入力してください")
-      }
-
-      // 認証状態を再確認
-      if (!user || !token) {
-        throw new Error("認証情報が見つかりません。再ログインしてください。")
-      }
-
-      // トークンの有効性を確認
-      const isValid = await useAuthStore.getState().verifyToken()
-      if (!isValid) {
-        throw new Error("認証が無効です。再ログインしてください。")
-      }
-
-      console.log("Creating god with authenticated user:", {
-        userId: user.id,
-        username: user.username,
-        hasToken: !!token,
-        tokenPreview: token.substring(0, 20) + "...",
-      })
-
-      // プロンプト生成用のデータを整理
-      const godData = {
-        ...formData,
-        description: `${formData.deity}として${formData.beliefs}を信念とし、${formData.special_skills}を特技とする神様`,
-      }
-
-      const response = await apiClient.post("/api/gods/create", godData)
-
-      // 成功時に下書きをクリア
-      clearDraft()
-
-      toast({
-        title: "神様作成完了！",
-        description: `${formData.name}が誕生しました！`,
-      })
-
-      router.push(`/gods/${response.godId}`)
-    } catch (error) {
-      console.error("God creation error:", error)
-
-      if (error instanceof Error) {
-        if (error.message.includes("認証") || error.message.includes("無効")) {
-          // 認証エラーの場合はログインページにリダイレクト
-          useAuthStore.getState().logout()
-          router.push("/login")
-          return
-        }
-        setError(error.message)
-      } else {
-        setError("神様の作成に失敗しました")
-      }
-    } finally {
-      setIsLoading(false)
+      setActiveStep((prev) => prev - 1)
     }
   }
 

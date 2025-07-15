@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { mockGetUserFromToken, mockUpdateUserBalance, mockCreateGod, getActiveTokens } from "@/lib/mock-auth"
+import { mockGetUserFromToken, mockUpdateUserBalance, mockCreateGod } from "@/lib/mock-auth"
 
 // 詳細なプロンプト生成関数
 function generateGodPrompt(godData: any): string {
@@ -57,72 +57,37 @@ function generateGodPrompt(godData: any): string {
 }
 
 export async function GET() {
-  const activeTokens = getActiveTokens()
   return NextResponse.json({
     message: "God creation API is accessible",
     timestamp: new Date().toISOString(),
-    activeTokensCount: Object.keys(activeTokens).length,
   })
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("=== Detailed God Creation API Called ===")
+    console.log("=== God Creation API Called ===")
 
-    // Get authorization header with multiple fallback methods
+    // Get authorization header
     const authHeader = request.headers.get("authorization")
-    let token = ""
-
-    if (authHeader) {
-      token = authHeader.replace("Bearer ", "")
-      console.log("✅ Token from Authorization header:", token.substring(0, 30) + "...")
-    } else {
-      // Fallback: try to get token from request body or cookies
-      try {
-        const body = await request.json()
-        if (body.token) {
-          token = body.token
-          console.log("✅ Token from request body:", token.substring(0, 30) + "...")
-        }
-      } catch (error) {
-        console.log("❌ No token in request body")
-      }
-
-      // If still no token, try cookies
-      if (!token) {
-        const cookies = request.headers.get("cookie")
-        if (cookies) {
-          const tokenMatch = cookies.match(/auth-token=([^;]+)/)
-          if (tokenMatch) {
-            token = tokenMatch[1]
-            console.log("✅ Token from cookies:", token.substring(0, 30) + "...")
-          }
-        }
-      }
-    }
-
-    if (!token) {
-      console.log("❌ No authentication token found")
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("❌ No valid authorization header found")
       return NextResponse.json(
-        {
-          error: "認証トークンが必要です",
-          details: "Authorization header, request body, or cookies must contain a valid token",
-        },
-        { status: 401 },
+        { error: "認証トークンが必要です" },
+        { status: 401 }
       )
     }
 
-    // Authenticate user with enhanced error handling
+    const token = authHeader.replace("Bearer ", "")
+    console.log("✅ Token from Authorization header:", token.substring(0, 30) + "...")
+
+    // Authenticate user
     console.log("🔍 Authenticating user with token...")
     const user = await mockGetUserFromToken(token)
     if (!user) {
       console.log("❌ User authentication failed")
       return NextResponse.json(
-        {
-          error: "認証に失敗しました。再ログインしてください。",
-          details: "Token validation failed",
-        },
-        { status: 401 },
+        { error: "認証に失敗しました。再ログインしてください。" },
+        { status: 401 }
       )
     }
 
@@ -132,23 +97,9 @@ export async function POST(request: NextRequest) {
       balance: user.saisenBalance,
     })
 
-    // Parse request body (re-read if already consumed)
-    let body
-    try {
-      // If we already read the body for token extraction, we need to handle this differently
-      if (authHeader) {
-        body = await request.json()
-      } else {
-        // Body was already read, so we need to reconstruct it or handle differently
-        // For now, let's assume the body is available
-        const requestText = await request.text()
-        body = JSON.parse(requestText)
-      }
-      console.log("📝 Request body parsed successfully")
-    } catch (error) {
-      console.log("❌ Failed to parse request body:", error)
-      return NextResponse.json({ error: "リクエストボディの解析に失敗しました" }, { status: 400 })
-    }
+    // Parse request body
+    const body = await request.json()
+    console.log("📝 Request body received")
 
     const {
       name,
@@ -177,8 +128,6 @@ export async function POST(request: NextRequest) {
       category,
       mbtiType,
       colorTheme,
-      hasPersonality: !!personality,
-      hasBigFive: !!bigFiveTraits,
     })
 
     // Validate required fields
@@ -186,7 +135,7 @@ export async function POST(request: NextRequest) {
       console.log("❌ Missing required fields")
       return NextResponse.json(
         { error: "必須項目が不足しています。名前、神格、信念、特技は必須です。" },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -202,7 +151,7 @@ export async function POST(request: NextRequest) {
       console.log("❌ Insufficient balance")
       return NextResponse.json(
         { error: `神様作成には${CREATION_COST}賽銭が必要です。現在の残高: ${user.saisenBalance}賽銭` },
-        { status: 400 },
+        { status: 400 }
       )
     }
 
@@ -227,7 +176,7 @@ export async function POST(request: NextRequest) {
 
     console.log("🎭 Generated prompt:", generatedPrompt.substring(0, 200) + "...")
 
-    // Create god with detailed data
+    // Create god data
     const godData = {
       name: name || "無名の神",
       description: description || `${deity}として活動する神様`,
@@ -248,52 +197,45 @@ export async function POST(request: NextRequest) {
         bigFiveTraits,
         mbtiType,
         scenario,
-        colorTheme,
-        generatedPrompt,
       }),
+      colorTheme: colorTheme || "purple",
+      generatedPrompt,
       creatorId: user.id,
-      believersCount: 0,
-      powerLevel: 1,
-      colorTheme,
-      prompt: generatedPrompt,
-      ...body,
+      creatorUsername: user.username,
     }
 
+    console.log("🏗️ Creating god in storage...")
     const godId = await mockCreateGod(godData)
-    console.log("✅ God created successfully:", godId)
 
-    // Update balance
+    console.log("💰 Updating user balance...")
     const newBalance = user.saisenBalance - CREATION_COST
-    const balanceUpdated = await mockUpdateUserBalance(user.id, newBalance)
-    if (!balanceUpdated) {
-      console.log("⚠️ Failed to update balance, but god was created")
-    } else {
-      console.log("✅ Balance updated successfully:", newBalance)
-    }
+    await mockUpdateUserBalance(user.id, newBalance)
 
-    const response = {
-      message: "詳細な神様が正常に作成されました！",
-      godId: godId,
-      newBalance: newBalance,
+    console.log("✅ God creation completed successfully:", {
+      godId,
+      newBalance,
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "神様が正常に作成されました",
+      godId,
       god: {
         id: godId,
-        ...godData,
-        createdAt: new Date().toISOString(),
+        name: godData.name,
+        description: godData.description,
+        category: godData.category,
+        mbtiType: godData.mbtiType,
+        believersCount: 0,
+        powerLevel: 1,
       },
-      prompt: generatedPrompt,
-    }
-
-    console.log("🎉 God creation completed successfully")
-    return NextResponse.json(response)
+      newBalance,
+    })
   } catch (error) {
-    console.error("💥 God creation API error:", error)
+    console.error("❌ God creation error:", error)
     return NextResponse.json(
-      {
-        error: "サーバーエラーが発生しました",
-        details: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 },
+      { error: "サーバーエラーが発生しました" },
+      { status: 500 }
     )
   }
 }
