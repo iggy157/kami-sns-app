@@ -25,5 +25,14 @@
     "isSuperAdmin": false,
     "saisenBalance": 0,
     "createdAt": "2025-07-15T06:43:14.641Z"
+  },
+  {
+    "id": "6",
+    "username": "test5",
+    "email": "test5@gmail.com",
+    "isAdmin": false,
+    "isSuperAdmin": false,
+    "saisenBalance": 500,
+    "createdAt": "2025-07-15T07:17:33.452Z"
   }
 ]

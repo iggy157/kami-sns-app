@@ -244,11 +244,11 @@ export default function CreateGodPage() {
 
       toast({
         title: "神様作成完了！",
-        description: `${formData.name}が誕生しました！ダッシュボードで確認できます。`,
+        description: `${formData.name}が誕生しました！神様一覧で確認できます。`,
       })
 
-      // Redirect to dashboard or god detail
-      router.push("/dashboard")
+      // Redirect to gods list to see the newly created god
+      router.push("/gods")
 
     } catch (error: any) {
       console.error("Failed to create god:", error)

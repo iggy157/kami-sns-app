@@ -52,5 +52,23 @@
     "createdAt": "2025-07-15T06:45:32.483Z",
     "believersCount": 0,
     "powerLevel": 1
+  },
+  {
+    "id": "god_1752563932074_l9q2g8olb",
+    "name": "rrrrr",
+    "description": "vvvvvvとして活動する神様",
+    "category": "spiritual",
+    "mbtiType": "ISTJ",
+    "deity": "vvvvvv",
+    "beliefs": "vvvvvvvvvvvv",
+    "special_skills": "vvvvvvvvvvvv",
+    "personality": "{\"personality\":\"vvvvvvvvvvvvv\",\"speech_style\":\"vvvvvvvvvvv\",\"action_style\":\"vvvvvvvvvvvvvv\",\"likes\":\"vvvvvvvv\",\"dislikes\":\"vvvvvvvvvv\",\"relationship_with_humans\":\"vvvvvvvvvv\",\"relationship_with_followers\":\"vvvvvvvvv\",\"limitations\":\"vvvvvvvvvvv\",\"bigFiveTraits\":{\"openness\":50,\"conscientiousness\":50,\"extraversion\":50,\"agreeableness\":50,\"neuroticism\":50},\"mbtiType\":\"ISTJ\",\"scenario\":\"vvvvvvvvvvvvv\"}",
+    "colorTheme": "blue",
+    "generatedPrompt": "rrrrrはvvvvvvvvvvvvvに直面している。rrrrrはvvvvvvであり、信念として「vvvvvvvvvvvv」を持っている。rrrrrの特技はvvvvvvvvvvvvで、性格は「vvvvvvvvvvvvv」である。性格特性として、開放性50%、誠実性50%、外向性50%、協調性50%、神経症傾向50%を持つ。MBTI性格タイプはISTJである。話し方は「vvvvvvvvvvv」で、vvvvvvvvvvvvvv。rrrrrはvvvvvvvvが好きで、vvvvvvvvvvを嫌う。rrrrrは人間に対してvvvvvvvvvv、信者にはvvvvvvvvv。rrrrrにはvvvvvvvvvvvという制約がある。",
+    "creatorId": "6",
+    "creatorUsername": "test5",
+    "createdAt": "2025-07-15T07:18:52.074Z",
+    "believersCount": 0,
+    "powerLevel": 1
   }
 ]
